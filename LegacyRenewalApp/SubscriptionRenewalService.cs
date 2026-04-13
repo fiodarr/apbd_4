@@ -12,16 +12,37 @@ namespace LegacyRenewalApp
         private readonly ISubscriptionPlanRepository _planRepository;
         private readonly IRenewalServiceValidator _validator;
         private readonly IBillingGateway _billingGateway;
+        private readonly ISupportFeeCalculator _supportFeeCalculator;
+        private readonly DiscountCalculator _discountCalculator;
+
 
         public SubscriptionRenewalService()
-            : this(new CustomerRepository(), new SubscriptionPlanRepository())
+            : this(
+                  new CustomerRepository(),
+                  new SubscriptionPlanRepository(),
+                  new RenewalServiceValidator(),
+                  new BillingGatewayAdapter(),
+                  new DiscountCalculator(),
+                  new SupportFeeCalculator()
+                  )
         {
         }
 
-        public SubscriptionRenewalService(ICustomerRepository customerRepository, ISubscriptionPlanRepository planRepository)
+        public SubscriptionRenewalService(
+            ICustomerRepository customerRepository,
+            ISubscriptionPlanRepository planRepository,
+            IRenewalServiceValidator validator,
+            IBillingGateway billingGateway,
+            DiscountCalculator discountCalculator,
+            ISupportFeeCalculator supportFeeCalculator
+            )
         {
             _customerRepository = customerRepository;
             _planRepository = planRepository;
+            _validator = validator;
+            _billingGateway = billingGateway;
+            _discountCalculator = discountCalculator;
+            _supportFeeCalculator = supportFeeCalculator;
         }
 
         public RenewalInvoice CreateRenewalInvoice(
@@ -48,6 +69,24 @@ namespace LegacyRenewalApp
             decimal baseAmount = (plan.MonthlyPricePerSeat * seatCount * 12m) + plan.SetupFee;
             decimal discountAmount = 0m;
             string notes = string.Empty;
+
+            var discountResult = _discountCalculator.CalculateDiscounts(baseAmount, customer, plan, seatCount, useLoyaltyPoints);
+            notes += discountResult.notes;
+
+            decimal subtotalAfterDiscount = baseAmount - discountAmount;
+            if (subtotalAfterDiscount < 300m)
+            {
+                subtotalAfterDiscount = 300m;
+                notes += "minimum discounted subtotal applied; ";
+            }
+
+            decimal supportFee = 0m;
+            if (includePremiumSupport)
+            {
+                supportFee = _supportFeeCalculator.CalculateSupportFee(normalizedPlanCode);
+                notes += "premium support included; ";
+            }
+
 
             if (customer.Segment == "Silver")
             {
