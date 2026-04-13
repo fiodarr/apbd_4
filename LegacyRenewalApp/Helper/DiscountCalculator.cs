@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using LegacyRenewalApp.Interfaces;
+using LegacyRenewalApp.Models;
 
 namespace LegacyRenewalApp.Helper
 {
@@ -11,12 +12,16 @@ namespace LegacyRenewalApp.Helper
     {
         private readonly IDiscountStrategy[] _strategies;
 
+        public DiscountCalculator()
+        {
+        }
+
         public DiscountCalculator(params IDiscountStrategy[] strategies)
         {
             _strategies = strategies;
         }
 
-        public (decimal discountAmount, string notes) CalculateDiscounts(
+        public decimal CalculateDiscount(
             decimal baseAmount, Models.Customer customer, Models.SubscriptionPlan subscription,
             int seatCount, bool useLoyaltyPoints)
         {
@@ -31,7 +36,7 @@ namespace LegacyRenewalApp.Helper
                     notesBuilder.Append(discount.Description).Append("; ");
                 }
             }
-            return (totalDiscount, notesBuilder.ToString());
+            return totalDiscount;
         }
     }
 }
