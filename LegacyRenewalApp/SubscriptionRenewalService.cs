@@ -12,26 +12,21 @@ namespace LegacyRenewalApp
         private readonly ISubscriptionPlanRepository _planRepository;
         private readonly IRenewalServiceValidator _validator;
         private readonly IBillingGateway _billingGateway;
-        private readonly ISupportFeeCalculator _supportFeeCalculator;
-        private readonly IPaymentFeeCalculator _paymentFeeCalculator;
-        private readonly ITaxRateProvider _taxRateProvider;
         private readonly DiscountCalculator _discountCalculator;
-        private SubscriptionPlanRepository subscriptionPlanRepository;
-        private RenewalServiceValidator renewalServiceValidator;
-        private BillingGatewayAdapter billingGatewayAdapter;
-        private PaymentFeeCalculator paymentFeeCalculator;
+        private readonly ITaxRateProvider _taxRateProvider;
+        private readonly IPaymentFeeCalculator _paymentFeeCalculator;
+        private readonly ISupportFeeCalculator _supportFeeCalculator;
 
         public SubscriptionRenewalService()
             : this(
-                  new CustomerRepository(),
-                  new SubscriptionPlanRepository(),
-                  new RenewalServiceValidator(),
-                  new BillingGatewayAdapter(),
-                  new DiscountCalculator(),
-                  new SupportFeeCalculator(),
-                  new PaymentFeeCalculator(),
-                  new TaxRateProvider()
-                  )
+                new CustomerRepository(),
+                new SubscriptionPlanRepository(),
+                new RenewalServiceValidator(),
+                new BillingGatewayAdapter(),
+                new DiscountCalculator(),
+                new TaxRateProvider(),
+                new PaymentFeeCalculator(),
+                new SupportFeeCalculator())
         {
         }
 
@@ -40,32 +35,19 @@ namespace LegacyRenewalApp
             ISubscriptionPlanRepository planRepository,
             IRenewalServiceValidator validator,
             IBillingGateway billingGateway,
-            ISupportFeeCalculator supportFeeCalculator,
-            IPaymentFeeCalculator paymentFeeClaculator,
+            DiscountCalculator discountCalculator,
             ITaxRateProvider taxRateProvider,
-            DiscountCalculator discountCalculator
-            )
+            IPaymentFeeCalculator paymentFeeCalculator,
+            ISupportFeeCalculator supportFeeCalculator)
         {
             _customerRepository = customerRepository;
             _planRepository = planRepository;
             _validator = validator;
             _billingGateway = billingGateway;
-            _supportFeeCalculator = supportFeeCalculator;
-            _paymentFeeCalculator = paymentFeeClaculator;
-            _taxRateProvider = taxRateProvider;
             _discountCalculator = discountCalculator;
-        }
-
-        public SubscriptionRenewalService(CustomerRepository customerRepository, SubscriptionPlanRepository subscriptionPlanRepository, RenewalServiceValidator renewalServiceValidator, BillingGatewayAdapter billingGatewayAdapter, DiscountCalculator discountCalculator, SupportFeeCalculator supportFeeCalculator, PaymentFeeCalculator paymentFeeCalculator, TaxRateProvider taxRateProvider)
-        {
-            this._customerRepository = customerRepository;
-            this.subscriptionPlanRepository = subscriptionPlanRepository;
-            this.renewalServiceValidator = renewalServiceValidator;
-            this.billingGatewayAdapter = billingGatewayAdapter;
-            this._discountCalculator = discountCalculator;
-            this._supportFeeCalculator = supportFeeCalculator;
-            this.paymentFeeCalculator = paymentFeeCalculator;
-            this._taxRateProvider = taxRateProvider;
+            _taxRateProvider = taxRateProvider;
+            _paymentFeeCalculator = paymentFeeCalculator;
+            _supportFeeCalculator = supportFeeCalculator;
         }
 
         public RenewalInvoice CreateRenewalInvoice(
@@ -103,16 +85,16 @@ namespace LegacyRenewalApp
                 notes += "minimum discounted subtotal applied; ";
             }
 
-            decimal paymentFeeBase = subtotalAfterDiscount + supportFee;
-            decimal paymentFee = _paymentFeeCalculator.Calculate(normalizedPaymentMethod, paymentFeeBase);
-            notes += _paymentFeeCalculator.GetNote(normalizedPaymentMethod);
-
             decimal supportFee = 0m;
             if (includePremiumSupport)
             {
                 supportFee = _supportFeeCalculator.CalculateSupportFee(normalizedPlanCode);
                 notes += "premium support included; ";
             }
+
+            decimal paymentFeeBase = subtotalAfterDiscount + supportFee;
+            decimal paymentFee = _paymentFeeCalculator.CalculatePaymentFee(paymentFeeBase, normalizedPaymentMethod);
+            notes += _paymentFeeCalculator.GetMethod(normalizedPaymentMethod);
 
             decimal taxRate = _taxRateProvider.GetTaxRate(customer.Country);
             decimal taxBase = subtotalAfterDiscount + supportFee + paymentFee;
@@ -153,7 +135,6 @@ namespace LegacyRenewalApp
 
                 _billingGateway.sendEmail(customer.Email, subject, body);
             }
-
 
             return invoice;
         }

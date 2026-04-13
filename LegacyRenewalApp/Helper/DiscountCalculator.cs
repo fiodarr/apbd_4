@@ -11,14 +11,32 @@ namespace LegacyRenewalApp.Helper
     public class DiscountCalculator
     {
         private readonly IDiscountStrategy[] _strategies;
+        private SegmentDiscount segmentDiscount;
+        private LoyaltyPointsDiscount loyaltyPointsDiscount;
+        private LoyaltyYearsDiscount loyaltyYearsDiscount;
+        private SeatCountDiscount seatCountDiscount;
 
         public DiscountCalculator()
-        {
-        }
+            : this
+            (
+            new SegmentDiscount(),
+            new LoyaltyPointsDiscount(),
+            new LoyaltyYearsDiscount(),
+            new SeatCountDiscount()
+            )
+        { }
 
         public DiscountCalculator(params IDiscountStrategy[] strategies)
         {
             _strategies = strategies;
+        }
+
+        public DiscountCalculator(SegmentDiscount segmentDiscount, LoyaltyPointsDiscount loyaltyPointsDiscount, LoyaltyYearsDiscount loyaltyYearsDiscount, SeatCountDiscount seatCountDiscount)
+        {
+            this.segmentDiscount = segmentDiscount;
+            this.loyaltyPointsDiscount = loyaltyPointsDiscount;
+            this.loyaltyYearsDiscount = loyaltyYearsDiscount;
+            this.seatCountDiscount = seatCountDiscount;
         }
 
         public decimal CalculateDiscount(
@@ -37,6 +55,11 @@ namespace LegacyRenewalApp.Helper
                 }
             }
             return totalDiscount;
+        }
+
+        internal decimal CalculateDiscount(Customer customer, SubscriptionPlan plan, int seatCount, bool useLoyaltyPoints)
+        {
+            throw new NotImplementedException();
         }
     }
 }

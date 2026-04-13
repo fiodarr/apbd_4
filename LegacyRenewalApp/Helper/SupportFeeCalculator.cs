@@ -1,16 +1,20 @@
-﻿using LegacyRenewalApp.Interfaces;
+﻿using System.Collections.Generic;
+using LegacyRenewalApp.Interfaces;
 
 namespace LegacyRenewalApp.Helper
 {
     public class SupportFeeCalculator : ISupportFeeCalculator
     {
+        public static readonly Dictionary<string, decimal> PlanSupportFees = new Dictionary<string, decimal>
+        {
+            { "START", 250m },
+            { "PRO", 400m },
+            { "ENTERPRISE", 700m }
+        };
+
         public decimal CalculateSupportFee(string planCode)
         {
-            if (planCode.ToUpperInvariant().Contains("PREMIUM"))
-            {
-                return 50m;
-            }
-            return 0m;
+            return PlanSupportFees.TryGetValue(planCode, out var fee) ? fee : 0m;
         }
     }
 }
