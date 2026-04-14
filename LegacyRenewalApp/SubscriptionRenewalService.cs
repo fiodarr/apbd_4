@@ -94,7 +94,7 @@ namespace LegacyRenewalApp
 
             decimal paymentFeeBase = subtotalAfterDiscount + supportFee;
             decimal paymentFee = _paymentFeeCalculator.CalculatePaymentFee(paymentFeeBase, normalizedPaymentMethod);
-            notes += _paymentFeeCalculator.GetMethod(normalizedPaymentMethod);
+            notes += _paymentFeeCalculator.GetNote(normalizedPaymentMethod);
 
             decimal taxRate = _taxRateProvider.GetTaxRate(customer.Country);
             decimal taxBase = subtotalAfterDiscount + supportFee + paymentFee;

@@ -9,6 +9,6 @@ namespace LegacyRenewalApp.Interfaces
     public interface IPaymentFeeCalculator
     {
         decimal CalculatePaymentFee(decimal amount, string paymentMethod);
-        string GetMethod(string paymentMethod);
+        string GetNote(string paymentMethod);
     }
 }
